@@ -1,0 +1,56 @@
+{:paths ["src" "test" "portfolio"]
+ :tasks {tailwind-dev {:doc "Inicia tailwind en modo dev"
+                       :task (do
+                               (println "Iniciando watch de tailwind...")
+                               (shell "npx" "@tailwindcss/cli" "-i" "./src/{{top/ns}}.{{main/ns}}/front_end/main.css" "-o" "./resources/public/styles.css" "--watch"))}
+         tailwind-prod {:doc "Compila tailwind para produccion"
+                        :task (do
+                                (println "Iniciando build de tailwind para produccion")
+                                (shell "npx @tailwindcss/cli -i ./src/{{top/ns}}.{{main/ns}}./front_end/main.css -o ./resources/public/styles.css --minify"))}
+         npm {:doc "Instala modulos de npm"
+              :task (do
+                      (println "Instalando modulos npm...")
+                      (shell "npm install"))}
+         nrepl {:doc "Inicia NREPL compatible con VSCODE"
+                :task (do
+                        (println "Compilando cljs...")
+                        (shell "npx shadow-cljs watch app-dev portfolio"))}
+         shadow {:doc "Compila js con shadow para producción"
+                 :task (do
+                         (println "Compilando cljs para produccion...")
+                         (clojure "-M:shadow-prod"))}
+         shadow-build-report {:doc "Crea reporte de compilación de shadow-cljs"
+                              :task (do
+                                      (println "Creando reporte de compilación shadow-cljs...")
+                                      (clojure "-M:shadow-build-report"))}
+         -dev {:depends [npm nrepl tailwind-dev]}
+         dev {:task (do (println "Iniciando entorno de desarrollo...")
+                        (run '-dev {:parallel true})
+                        (deref (promise)))}
+         -prod {:depends [npm tailwind-prod shadow]}
+         build {:doc "Compila clj y crea jar de la aplicacion"
+                :task (do
+                        (run '-prod)
+                        (println "Creando .jar ...")
+                        (clojure "-T:build uber"))}
+         docker-run {:doc "Compila imagen y ejecuta contenedor docker de aplicación"
+                     :task (do
+                             (println "Creando y ejecutando imagen Docker...")
+                             (shell "docker" "compose" "up" "--build" "-d"))}
+         docker-stop {:doc "Detiene container Docker"
+                      :task (do
+                              (println "Deteniendo contenedor Docker...")
+                              (shell "docker" "compose" "stop" "app"))}
+         acc-tests {:doc "Corre los tests de aceptación"
+                    :task (do
+                            (println "Corriendo tests de aceptación...")
+                            (clojure "-X:acceptance-tests"))}
+         tests {:doc "Corre tests unitarios"
+                :task (do
+                        (println "Corriendo tests unitarios...")
+                        (clojure "-X:tests"))}
+         -release {:depends [tests build docker-run]}
+         release {:doc "Compila .jar, crea y corre imagen Docker"
+                  :task (do 
+                          (println "Creando release candidate...")
+                          (run '-release))}}}

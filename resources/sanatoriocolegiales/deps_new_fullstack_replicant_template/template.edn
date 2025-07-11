@@ -8,7 +8,8 @@
  :transform
  [["build" ""
    {"build.tmpl" "build.clj"
-    "deps.tmpl"  "deps.edn"}
+    "deps.tmpl"  "deps.edn"
+    "bb.tmpl" "bb.edn"}
    :only]
   ["src" "src/{{top/file}}"
    {"core.tmpl" "{{main/file}}/back_end/core.clj"
@@ -24,4 +25,8 @@
     "schema.tmpl" "{{main/file}}/front_end/db/schema.cljc"
     "store.tmpl" "{{main/file}}/front_end/db/store.cljc"}]
   ["test" "test/{{top/file}}"
-   {"service_test.tmpl" "{{main/file}}/back_end/service_test.clj"}]]}
+   {"service_test.tmpl" "{{main/file}}/back_end/service_test.clj"
+    "db_test.tmpl" "{{main/file}}/front_end/db_test.cljc"}]
+  ["test_aceptacion" ""
+   {"test_aceptacion_chrome.tmpl" "test_aceptacion_chrome.clj"
+    "test_aceptacion_firefox.tmpl" "test_aceptacion_firefox.clj"}]]}

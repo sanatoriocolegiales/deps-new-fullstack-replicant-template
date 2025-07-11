@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    ports: 
+      - "4500:4500"
+    volumes:
+      - ./app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4500/health"] 
+      interval: 15s  
+      timeout: 5s
+      start_period: 60s
+    secrets:
+      - secrets.edn
+    environment:
+      CREDENTIALS: "/run/secrets/secrets.edn"
+    restart: always  
+
+secrets:
+  secrets.edn:
+    file: ~/.app-secrets.edn
