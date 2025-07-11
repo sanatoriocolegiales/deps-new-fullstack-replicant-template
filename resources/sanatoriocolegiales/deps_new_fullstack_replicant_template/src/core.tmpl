@@ -1,0 +1,11 @@
+(ns {{top/ns}}.{{main/ns}}.back-end.core
+  (:require 
+   [donut.system :as ds] 
+   [{{top/ns}}.{{main/ns}}.back-end.system :as system])
+  (:gen-class))
+
+(defn -main 
+  []
+  (let [running-system (ds/start :prod)]
+    (.addShutdownHook (Runtime/getRuntime) (Thread. ^Runnable #(ds/signal running-system ::ds/stop)))))
+
