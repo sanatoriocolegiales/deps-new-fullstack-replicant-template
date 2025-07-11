@@ -15,6 +15,22 @@ Y para el frontend:
 2. Tailwind
 3. DaisyUI
 
+## Uso
+
+Para crear un template a partir de este proyecto debes instalar [deps-new](https://github.com/seancorfield/deps-new?tab=readme-ov-file) en tus herramientas de Clojure CLI. 
+
+Luego, en la línea de comandos ejecuta:
+
+```bash
+clojure -Sdeps '{:deps {io.github.sanatoriocolegiales/deps-new-fullstack-replicant-template {:git/tag "v0.0.1" :git/sha "a28266"}}}' -Tnew create :template sanatoriocolegiales/deps-new-fullstack-replicant-template :name sanatoriocolegiales/<mi-proyecto>
+```
+
+O en su defecto utilizar el último sha tomado de los commits:
+
+```bash
+clojure -Sdeps '{:deps {io.github.sanatoriocolegiales/deps-new-fullstack-replicant-template {:git/sha "CODIGO-SHA"}}}' -Tnew create :template sanatoriocolegiales/deps-new-fullstack-replicant-template :name sanatoriocolegiales/<mi-proyecto>
+```
+
 ## Desarrollo
 
 Antes de iniciar revisa tu archivo config.edn y setea todo lo que sea necesario para que el backend arranque correctamente. En especial la variable de entorno CREDENTIALS tiene que apuntar a un archivo .edn con las llaves que se especifican más abajo. Igual todo se puede cambiar a conveniencia. También vas a necesitar el .jar de Relativity en la carpeta *resources* o puedes retirarlo del deps.edn si lo prefieres. 
