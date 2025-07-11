@@ -2,11 +2,11 @@
  :tasks {tailwind-dev {:doc "Inicia tailwind en modo dev"
                        :task (do
                                (println "Iniciando watch de tailwind...")
-                               (shell "npx" "@tailwindcss/cli" "-i" "./src/{{top/ns}}/{{main/ns}}/front_end/main.css" "-o" "./resources/public/styles.css" "--watch"))}
+                               (shell "npx" "@tailwindcss/cli" "-i" "./src/{{top/file}}/{{main/file}}/front_end/main.css" "-o" "./resources/public/styles.css" "--watch"))}
          tailwind-prod {:doc "Compila tailwind para produccion"
                         :task (do
                                 (println "Iniciando build de tailwind para produccion")
-                                (shell "npx @tailwindcss/cli -i ./src/{{top/ns}}/{{main/ns}}/front_end/main.css -o ./resources/public/styles.css --minify"))}
+                                (shell "npx @tailwindcss/cli -i ./src/{{top/file}}/{{main/file}}/front_end/main.css -o ./resources/public/styles.css --minify"))}
          npm {:doc "Instala modulos de npm"
               :task (do
                       (println "Instalando modulos npm...")
