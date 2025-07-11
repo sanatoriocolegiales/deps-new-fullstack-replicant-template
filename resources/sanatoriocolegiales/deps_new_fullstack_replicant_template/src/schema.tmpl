@@ -1,0 +1,12 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.db.schema)
+
+(def schema {:query/query {:db/unique :db.unique/identity 
+                           :db/cardinality :db.cardinality/one}
+             :query/status {:db/cardinality :db.cardinality/one}
+             :query/result {:db/cardinality :db.cardinality/many}
+             :query/user-time {}
+             :query/error {}
+             :system/app {:db/unique :db.unique/identity
+                          :db/cardinality :db.cardinality/one}
+             :app/cargado-a-las {}
+             :ui/location {}})

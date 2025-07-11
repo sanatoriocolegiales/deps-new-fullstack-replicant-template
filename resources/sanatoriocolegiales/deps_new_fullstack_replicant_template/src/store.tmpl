@@ -1,0 +1,59 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.db.store
+  (:require [{{top/ns}}.{{main/ns}}.front-end.db.db :as db]
+            [{{top/ns}}.{{main/ns}}.front-end.db.schema :refer [schema]]
+            [datascript.core :as ds]))
+
+(def get-store (partial ds/create-conn schema)) 
+
+(def get-app-id 
+  "Obtiene el id asociado a :system/app"
+  #'db/get-app-id)
+
+(def get-query 
+  "Obtiene consulta en la db, requiere `state` y `query`"
+  #'db/pull-query)
+
+(def get-query-id
+  "Obtiene id de la consulta en la db, requiere `state` y `query`"
+  #'db/get-query-ident)
+
+(def query-status->action
+  "Mapea una respuesta según :query/status (e.g. :query.status/error, :query.status/loading, :query.status/success).
+   Recibe `state`, `ident` y `{:keys [on-error-action on-load-action on-availability-action else-action] :or {else-action [:p \"No hay nada que mostrar\"]}}`"
+  #'db/query-status->action)
+
+(def send-request 
+  "Crea cuerpo de solicitud. Espera `ident`, `now`, `query`" 
+  #'db/send-request)
+
+(def receive-response 
+  "Crea mapa con información de la respuesta según la consulta.
+   Espera `ident`, `now`, `query` y `response`"
+  #'db/receive-response)
+
+(def get-result 
+  "Obtiene :query/result de una consulta. Recibe `state` y `query`"
+  #'db/get-result)
+
+(def get-location
+  "Obtiene ruta actual en la DB"
+  #'db/get-location)
+
+(defn persistir!
+  "Guarda los datos en el store"
+  [db data-vec]
+  (ds/transact! db data-vec))
+
+(def get-current-location  
+  "Obtiene ruta guardada en db. Recibe `estado`"
+  #'db/get-location)
+
+(comment
+  
+  (type (@store)) 
+ 
+  (send-request store)
+
+  (get-location dev/store)
+  
+  :rcf)

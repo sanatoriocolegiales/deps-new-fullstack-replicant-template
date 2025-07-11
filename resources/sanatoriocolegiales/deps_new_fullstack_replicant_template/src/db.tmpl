@@ -1,0 +1,111 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.db.db
+  (:require [datascript.core :as ds]
+            [taoensso.telemere :as t]))
+
+(defn get-app-id
+  [estado]
+  (ds/entid @estado :system/app))
+
+(defn get-query-ident
+  [state query]
+  (println {:consulta query
+            :estado (:eavt (ds/db state))})
+  (let [res (ds/entid @state [:query/query query])]
+    (println (str "IDENT: " res))
+    res))
+
+(defn pull-query
+  [state ident]
+  (ds/pull @state [:*] ident))
+
+(defn query-status->action
+  [state ident {:keys [on-error-action on-load-action on-availability-action else-action] :or {else-action [:p "No hay nada que mostrar"]}}]
+  (t/event! ::query-status-a-accion {:level :info})
+  (println {:estado (:eavt (ds/db state))
+            :ident ident})
+  (if ident 
+    (let [q (pull-query state ident)]
+      (println {:resultado-pull-query q})
+      (case (:query/status q)
+        :query.status/error on-error-action
+        :query.status/loading on-load-action
+        :query.status/success on-availability-action
+        [:p "Estatus desconocido"]))
+    else-action))
+
+(defn send-request 
+  [ident now query]
+  [{:db/id ident
+    :query/status :query.status/loading
+    :query/query query
+    :query/user-time now}])
+
+(defn receive-response [ident now query response]
+  (vector (cond-> {:db/id ident
+                   :query/query query
+                   :query/status (if (:success? response true)
+                                   :query.status/success
+                                   :query.status/error)
+                   :query/user-time now}
+            (:success? response true) (assoc :query/result response)
+            (:error response) (assoc :query/error (:error response)))))
+
+(defn get-result [state query]
+  (some->
+   (ds/q '[:find ?result
+           :in $ ?q
+           :where
+           [?e :query/query ?q]
+           [?e :query/result ?result]]
+         @state
+         query)
+   ffirst))
+
+(defn get-location
+  [estado]
+  (ds/pull @estado [:location] :ui/location))
+
+(comment 
+  (receive-response 121 "2025-01-04T12:23:23" [:internados] {:internados [:registro]})
+  (receive-response 121 "2025-01-04T12:23:23" [:internados] {:success? false})
+  (receive-response 121 "2025-01-04T12:23:23" [:internados] {:success? false
+                                                             :error "dsads"})
+  
+  (ds/q '[:find ?id
+          :in $ ?q
+          :where 
+          [?id :query/query ?q]]
+        @dev/store
+        [:internados])
+  
+  (ds/q '[:find ?id
+          :in $ ?q
+          :where
+          [?e :system/app ?id]
+          [?id :query/query ?q]]
+        @dev/store
+        [:internados])
+  
+  (ds/q '[:find ?id 
+          :where 
+          [?e :db/ident :system/app]
+          [?id :query/query [:internados]]]
+        @dev/store)
+  
+  (ds/pull @dev/store [:*] 1)
+
+  (ds/pull @dev/store [:*] [:query/query [:internados]])
+
+  (ds/entity @dev/store 1)
+
+  (get-result dev/store [:internados])
+ 
+  (get-app-id dev/store)
+
+  (ds/db dev/store)
+
+  (ds/entid @dev/store [:query/query [:internados]])
+
+  (ds/transact! dev/store (send-request 1 (tick.core/now) [:internados]))
+
+  :rcf)

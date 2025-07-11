@@ -1,0 +1,35 @@
+(ns {{top/ns}}.{{main/ns}}.back-end.service-test
+  (:require [clojure.test :refer :all]
+            [ring.mock.request :as mock]
+            [{{top/ns}}.{{main/ns}}.back-end.service :refer [app]]))
+
+(deftest endpoints-sin-estado
+  (let [sut (partial (app {}))]
+    (testing "Al golpear a root /, devuelve html"
+      (is (= "text/html" (-> (sut (mock/request :get "/"))
+                             :headers
+                             (get "Content-Type")))))
+    (testing "Get sobre endpoint de api, devuelve 405"
+      (is (= 405 (-> (sut (mock/request :get "/v1/api"))
+                     :status))))
+    (testing "Health endpoint devuelve html"
+      (is (= "text/html" (-> (sut (mock/request :get "/health"))
+                             :headers
+                             (get "Content-Type")))))
+    (testing "Cualquier otro endpoint devuelve 404"
+      (is (= 404 (-> (sut (mock/request :get "/healths"))
+                     :status)))
+      (is (= 404 (-> (sut (mock/request :get "/h"))
+                     :status)))
+      (is (= 404 (-> (sut (mock/request :get "/v1"))
+                     :status)))
+      (is (= 404 (-> (sut (mock/request :get "/caulqu"))
+                     :status))))))
+
+
+(comment
+  
+  (run-test endpoints-sin-estado)
+
+  ((app {}) (mock/request :get "/"))
+  :rcf)

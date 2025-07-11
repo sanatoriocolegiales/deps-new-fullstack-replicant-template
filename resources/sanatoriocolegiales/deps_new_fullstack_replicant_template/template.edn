@@ -18,6 +18,10 @@
     "pacientes.tmpl" "{{main/file}}/back_end/modelo/pacientes.clj"
     "corecljs.tmpl" "{{main/file}}/front_end/core.cljs"
     "enrutador.tmpl" "{{main/file}}/front_end/enrutador.cljc"
-    "frontpage.tmpl" "{{main/file}}/front_end/frontpage.cljc"}]
+    "frontpage.tmpl" "{{main/file}}/front_end/frontpage.cljc"
+    "main.tmpl" "{{main/file}}/front_end/main.css"
+    "db.tmpl" "{{main/file}}/front_end/db/db.cljc"
+    "schema.tmpl" "{{main/file}}/front_end/db/schema.cljc"
+    "store.tmpl" "{{main/file}}/front_end/db/store.cljc"}]
   ["test" "test/{{top/file}}"
-   {"main_test.tmpl" "{{main/file}}_test.clj"}]]}
+   {"service_test.tmpl" "{{main/file}}/back_end/service_test.clj"}]]}
