@@ -17,6 +17,8 @@ Y para el frontend:
 
 ## Desarrollo
 
+Antes de iniciar revisa tu archivo config.edn y setea todo lo que sea necesario para que el backend arranque correctamente. En especial la variable de entorno CREDENTIALS tiene que apuntar a un archivo .edn con las llaves que se especifican más abajo. Igual todo se puede cambiar a conveniencia. También vas a necesitar el .jar de Relativity en la carpeta *resources* o puedes retirarlo del deps.edn si lo prefieres. 
+
 Para iniciar tu entorno de desarrollo en el root del proyecto teclea:
 
 ```bash
