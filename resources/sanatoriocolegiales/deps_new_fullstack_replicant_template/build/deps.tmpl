@@ -18,7 +18,7 @@
         com.domkm/silk {:mvn/version "0.1.2"}
         lambdaisland/uri {:mvn/version "1.19.155"}
         datascript/datascript {:mvn/version "1.7.5"}}
- :aliases {:run {:main-opts ["-m" "sanatorio-colegiales.historia-clinica-de-ingreso-a-cirugia.back-end.core"]}
+ :aliases {:run {:main-opts ["-m" "{{top/ns}}.{{main/ns}}.back-end.core"]}
            :dev {:classpath-overrides {#_#_org.clojure/clojurescript nil
                                        org.clojure/clojure nil}
                  :extra-paths ["dev" "test" "portfolio/src" "test_aceptacion"]
@@ -38,7 +38,7 @@
                               etaoin/etaoin {:mvn/version "1.1.43"}
                               org.testcontainers/testcontainers {:mvn/version "1.21.3"}
                               ring/ring-mock {:mvn/version "0.6.1"}}
-                 :jvm-opts ["-Dcljs.storm.instrumentOnlyPrefixes=sanatoriocolegiales.*"
+                 :jvm-opts ["-Dcljs.storm.instrumentOnlyPrefixes={{top/ns}}.*"
                             "-Dcljs.storm.instrumentEnable=true"
                             "-Dflowstorm.startRecording=false"]}
            :fs-web-plugin {:extra-deps {com.github.flow-storm/flow-storm-web-plugin {:mvn/version "1.0.2"}}

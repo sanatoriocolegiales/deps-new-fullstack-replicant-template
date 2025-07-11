@@ -1,0 +1,73 @@
+(ns {{top/ns}}.{{main/ns}}.back-end.system
+  (:require
+   [{{top/ns}}.{{main/ns}}.back-end.service :refer [app]]
+   [donut.system :as ds]
+   [aero.core :refer [read-config]]
+   [ring.adapter.jetty :refer [run-jetty]] 
+   [clojure.java.io :as io]
+   [taoensso.telemere :as t]))
+
+(defn obtener-configuracion
+  [& [perfil]]
+  (t/event! ::cargando-configuracion {:level :info :data {:perfil perfil}})
+  (read-config (io/resource "config.edn") (when perfil {:profile perfil})))
+
+(defmethod ds/named-system :prod
+  [_]
+  {::ds/defs
+   {:env (obtener-configuracion :prod)
+    :logs {:telemere #::ds{:start (fn iniciar-handler-log-prod [{{:keys [log-path]} ::ds/config}]
+                                    (t/add-handler! :production-handler (t/handler:file {:path log-path
+                                                                                         :output-fn (t/pr-signal-fn {:pr-fn :edn})})))
+                           :stop (fn detener-handler-log [_]
+                                   (t/stop-handlers!))
+                           :config {:log-path (ds/ref [:env :log-path])}}}
+    :http-server {:server #::ds{:start (fn iniciar-servidor [{{:keys [handler opts]} ::ds/config}]
+                                         (t/event! ::iniciando-servidor {:level :info
+                                                                         :data {:opciones opts}})
+                                         (run-jetty handler opts))
+                                :stop (fn detener-servidor [{::ds/keys [instance]}]
+                                        (t/event! ::deteniendo-servidor)
+                                        (when instance (.stop instance)))
+                                :config {:handler (ds/ref [:http-server :handler])
+                                         :opts {:port (ds/ref [:env :port])}}}
+                  :handler #::ds{:start (fn crear-handler-prod [{{:keys [conexiones]} ::ds/config}]
+                                          (t/event! ::creando-handler-produccion {:level :info
+                                                                                  :data {:conexiones conexiones}})
+                                          (app conexiones))
+                                 :config {:conexiones (ds/ref [:env :db])}}}}})
+
+
+
+(comment
+
+  (tap> (obtener-configuracion :dev))
+ 
+  (tap> (obtener-configuracion :prod))
+  
+  (t/with-signal (t/event! ::evento-de-prueba {:level :info
+                                               :data "Cualquier cosa"}))
+
+  (t/with-signal (t/event! ::evento-de-prueba {:level :error
+                                               :data (ex-info "error tonto" {:tipo :error
+                                                                             :data {:x 1
+                                                                                    :y 3}})}))
+  (t/add-handler! :x
+                  (fn
+                    ([signal] (tap> signal))
+                    ([] nil)))
+
+  (:x (t/get-handlers))
+
+  (t/remove-handler! ::file-test-handler)
+   
+  (t/stop-handlers!)
+
+  (t/add-handler! ::file-test-handler (t/handler:file {:path "logs/log.edn"
+                                                       :output-fn (t/pr-signal-fn {:pr-fn :edn})})) 
+  
+  (t/event! ::dummy-event {:level :info :data {:ald 232 :ef 353} :mas true})
+
+  (t/event! ::dummy-event {:level :info :ha true :f "fe"})
+
+  :rcf)

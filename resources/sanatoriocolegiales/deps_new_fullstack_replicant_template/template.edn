@@ -11,6 +11,7 @@
     "deps.tmpl"  "deps.edn"}
    :only]
   ["src" "src/{{top/file}}"
-   {"core.tmpl" "{{main/file}}/back_end.clj"}]
+   {"core.tmpl" "{{main/file}}/back_end/core.clj"
+    "system.tmpl" "{{main/file}}/back_end/system.clj"}]
   ["test" "test/{{top/file}}"
    {"main_test.tmpl" "{{main/file}}_test.clj"}]]}
