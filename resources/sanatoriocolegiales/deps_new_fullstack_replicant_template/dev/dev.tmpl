@@ -1,0 +1,26 @@
+(ns dev
+  (:require [{{top/ns}}.{{main/ns}}.front-end.core :refer [main]]
+            [{{top/ns}}.{{main/ns}}.front-end.db.store :refer [get-store]]
+            [taoensso.telemere :as t]))
+
+(def store (get-store))
+
+(defn init []
+  (main store js/document.body)
+  (t/event! ::aplicacion-cargada-desarrollo {:level :info}))
+
+(defn ^:dev/after-load reload []
+  (main store js/document.body)
+  (t/event! ::aplicacion-recargada-desarrollo {:level :info}))
+ 
+
+(comment
+  (init)
+  (t/with-signal (t/event! ::aplicacion-cargada {:level :info}))
+  
+  (println @store)
+
+  (reload)
+  
+  store
+  :rcf)

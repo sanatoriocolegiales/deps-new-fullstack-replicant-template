@@ -31,4 +31,10 @@
     "db_test.tmpl" "{{main/file}}/front_end/db_test.cljc"}]
   ["test_aceptacion" "test_aceptacion"
    {"test_aceptacion_chrome.tmpl" "test_aceptacion_chrome.clj"
-    "test_aceptacion_firefox.tmpl" "test_aceptacion_firefox.clj"}]]}
+    "test_aceptacion_firefox.tmpl" "test_aceptacion_firefox.clj"}]
+  ["portfolio" "portfolio/src"
+   {"scenes.tmpl" "scenes.cljc"}]
+  ["dev" "dev"
+   {"dev_repl.tmpl" "dev_repl.clj"
+    "dev.tmpl" "dev.cljs"
+    "user.tmpl" "user.clj"}]]}

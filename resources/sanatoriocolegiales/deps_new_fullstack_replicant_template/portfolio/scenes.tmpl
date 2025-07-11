@@ -1,0 +1,41 @@
+(ns scenes
+  (:require [portfolio.ui :as ui]
+            [portfolio.replicant :refer-macros [defscene]]
+            [{{top/ns}}.{{main/ns}}.front-end.frontpage :as frontpage]
+            [{{top/ns}}.{{main/ns}}.front-end.db.store :as store :refer [get-store]]
+            [tick.core :as time]))
+
+(defn iniciar-store
+  [store]
+  (store/persistir! store [{:db/ident :system/app
+                            :app/cargado-a-las (time/time)}]))
+
+(defscene button
+  [:button.btn.btn-xs "I am a button"])
+
+(defscene frontpage-sin-pacientes
+  (let [store (get-store)]
+    (frontpage/render-ui store)))
+
+(defscene frontpage-con-error
+  (let [store (get-store) 
+        _ (iniciar-store store)
+        _ (store/persistir! store (store/receive-response 1 (time/now) [:internados] {:success? false}))]
+    (frontpage/render-ui store)))
+
+(defscene frontpage-con-pacientes
+  (let [store (get-store)
+        _ (iniciar-store store)
+        _ (store/persistir! store (store/receive-response 1 (time/now) [:internados] {:internados [{:tbc_admision_scroll/adm_histclin 48774M
+                                                                                                    :tbc_admision_scroll/adm_apelnom "Julian Álvarez"
+                                                                                                    :tbc_admision_scroll/adm_habita 105}
+                                                                                                   {:tbc_admision_scroll/adm_histclin 2148774M
+                                                                                                    :tbc_admision_scroll/adm_apelnom "Miguel Sarmiento"
+                                                                                                    :tbc_admision_scroll/adm_habita 15}
+                                                                                                   {:tbc_admision_scroll/adm_histclin 480000M
+                                                                                                    :tbc_admision_scroll/adm_apelnom "Juliana Galarraga"
+                                                                                                    :tbc_admision_scroll/adm_habita 150}]}))]
+    (frontpage/render-ui store)))
+
+(defn main []
+  (ui/start! {:config {:css-paths ["/public/styles.css"]}}))

@@ -1,0 +1,67 @@
+(ns user
+  {:clj-kondo/config {:linters {:unused-namespace {:level :off}}}}
+  (:require [portal.api :as p]
+            [donut.system.repl :as dsr] 
+            [dev-repl]
+            [clojure.tools.namespace.repl :as nsrepl]
+            [donut.system :as ds]
+            [donut.system.repl.state :as dsrs]
+            [cliente-http :as cliente]
+            [ring.middleware.reload :refer [wrap-reload]] 
+            [{{top/ns}}.{{main/ns}}.back-end.service :refer [app]]
+            [{{top/ns}}.{{main/ns}}.back-end.system :as system]
+            [taoensso.telemere :as t])
+  (:refer-clojure :exclude [test]))
+
+(defmethod ds/named-system :dev
+  [_]
+  (ds/system :prod {[:env] (system/obtener-configuracion :dev)
+                    [:log :telemere ::ds/start] (fn iniciar-handler-log-dev [_]
+                                                  (t/add-handler! :portal-handler
+                                                                  (fn
+                                                                    ([signal]
+                                                                     (tap>
+                                                                      (into {} (keep (fn [[k v]] (when v [k v])) signal))))
+                                                                    ([] nil))))
+                    [:http-server :server ::ds/config] {:handler (ds/ref [:http-server :handler])
+                                                        :opts {:port (ds/ref [:env :port])
+                                                               :join? false}}
+                    [:http-server :handler ::ds/start] (fn crear-handler-dev [{{:keys [conexiones]} ::ds/config}]
+                                                         (t/event! ::creando-handler-desarrollo {:level :info
+                                                                                                 :data {:conexiones conexiones}})
+                                                         (wrap-reload (#'app conexiones)))}))
+
+(nsrepl/set-refresh-dirs "dev" "src" "test")
+
+(def start dsr/start)
+(def stop dsr/stop)
+(def restart dsr/restart)
+
+(defmethod ds/named-system :donut.system/repl
+  [_]
+  (ds/system :dev))
+
+(when-not dsrs/system
+  (dsr/start))
+
+(def running-system (::ds/instances dsrs/system))
+
+(def portal-instance (or (seq (p/sessions)) (p/open {:launcher :vs-code})))
+
+(add-tap #'p/submit)
+
+(comment 
+  
+  (start)
+
+  (stop)
+  
+  (restart)
+  
+  (clojure.repl.deps/sync-deps)
+
+  :dbg
+
+  (type cuerpo)
+  (slurp cuerpo)
+  )
