@@ -1,0 +1,6 @@
+[tools]
+babashka = "latest"
+clojure = "latest"
+java = "latest"
+node = "latest"
+npm = "latest"

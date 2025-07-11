@@ -1,0 +1,28 @@
+{:secrets #include #env CREDENTIALS
+ :version #or [#env VERSION "0.0.1"]
+ :port #profile {:prod #long #or [#env PORT 4500]
+                 :dev #long 4000
+                 :test #long #env TEST_PORT}
+ :db {:db-a #profile
+             {:dev {:dbtype ""
+                    :dbname ""
+                    :classname ""
+                    :user ""
+                    :password ""
+                    :host #env HOST
+                    :port #long 1583}
+              :prod {:dbtype ""
+                     :dbname #ref [:secrets :db]
+                     :classname #ref [:secrets :driver-name]
+                     :user #ref [:secrets :user]
+                     :password #ref [:secrets :pass]
+                     :host #ref [:secrets :host]
+                     :port  #ref [:secrets :port]}
+              :test {:dbtype ""
+                     :dbname ""
+                     :classname ""
+                     :user ""
+                     :password ""
+                     :host ""
+                     :port 0}}}
+ :log-path #or [#env LOGPATH "/tmp/logs.edn"]}
