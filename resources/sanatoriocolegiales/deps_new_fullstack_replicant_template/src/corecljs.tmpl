@@ -1,0 +1,216 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.core
+  (:require [replicant.dom :as r]
+            [tick.core :as time]
+            [datascript.core :as ds]
+            [taoensso.telemere :as t]
+            [clojure.walk :as walk]
+            [replicant.alias :as alias]
+            [com.wsscode.transito :as transito]
+            [com.wsscode.pathom3.connect.operation.transit :as pcot] 
+            [{{top/ns}}.{{main/ns}}.front-end.enrutador :as enrutador]
+            [{{top/ns}}.{{main/ns}}.front-end.frontpage :as frontpage]
+            [{{top/ns}}.{{main/ns}}.front-end.db.store :as db-store :refer [get-store]]))
+
+(defn realizar-consulta
+  [estado consulta]
+  (t/event! ::busca-pacientes-internados {:level :info})
+  (let [app (db-store/get-app-id estado)]
+    (db-store/persistir! estado (db-store/send-request app (time/now) consulta))
+    (-> (js/fetch (str js/location.origin "/v1/api") (clj->js {:method "POST"
+                                                               :headers {"Content-Type" "application/transit+json"
+                                                                         "Accept" "application/transit+json"}
+                                                               :body (transito/write-str consulta {:handlers pcot/write-handlers})}))
+        (.then #(.text %))
+        (.then #(transito/read-str % {:handlers (assoc pcot/read-handlers "f" (fn [t]
+                                                                                (let [v (js/Object.values t)]
+                                                                                  (->> v
+                                                                                       js->clj
+                                                                                       (apply str)
+                                                                                       js/Number.parseInt))))}))
+        (.then #(db-store/persistir! estado (db-store/receive-response app (time/now) consulta %)))
+        (.catch #(let [mensaje (.-message %)]
+                   (js/console.error mensaje)
+                   (t/event! ::error-al-obtener-pacientes-internados {:level :error
+                                                                      :excepcion mensaje})
+                   (db-store/persistir! estado (db-store/receive-response app (time/now) consulta {:success? false
+                                                                                                   :error mensaje})))))))
+
+(defn routing-anchor [attrs children]
+  (let [routes (-> attrs :replicant/alias-data :routes)]
+    (into [:a (cond-> attrs
+                (:ui/location attrs)
+                (assoc :href (enrutador/location->url routes (:ui/location attrs))))]
+          children)))
+
+(alias/register! :ui/a routing-anchor)
+
+(defn find-target-href [e]
+  (some-> e .-target
+          (.closest "a")
+          (.getAttribute "href")))
+
+(defn interpolate-actions [event actions]
+  (walk/postwalk
+   (fn [x]
+     (case x
+       :event/target.value (.. event -target -value)
+       ;; Agregar nuevos eventos acá
+       x))
+   actions))
+
+(def pages
+  [frontpage/page])
+
+(def by-page-id
+  (->> pages
+       (map (juxt :page-id identity))
+       (into {})))
+
+(defn get-render-f [state] 
+  (or (get-in by-page-id [(-> (db-store/get-current-location state) :location :location/page-id) :render])
+      (fn [_] 
+        [:h1 "No se encontró la ruta especificada"]))) 
+ 
+(defn get-current-location [routes]
+  (->> js/location.pathname
+       (enrutador/url->location routes)))
+
+(defn execute-actions [estado actions]
+  (t/event! ::ejecuta-acciones {:level :info})
+  (doseq [[action & args] actions]
+    (case action
+      :db/transact (apply db-store/persistir! estado args)
+      :data/query (apply realizar-consulta estado args)
+      (t/event! ::accion-desconocida {:level :error
+                                      :fecha (time/now)
+                                      :data args}))))
+
+(defn get-location-load-actions [location]
+  (case (:location/page-id location)
+    :pages/frontpage [[:data/query [:internados]]]))
+
+(defn navigate! [estado location]
+  (t/event! ::navega-a-ubicacion {:level :info})
+  (let [current-location (:location (db-store/get-current-location estado))]
+    (db-store/persistir! estado [{:db/ident :ui/location
+                                  :location location}])
+    (when (not= current-location location)
+      (execute-actions estado (get-location-load-actions location)))))
+
+(defn route-click [e estado routes]
+  (let [href (find-target-href e)]
+    (when-let [location (enrutador/url->location routes href)]
+      (.preventDefault e)
+      (if (enrutador/essentially-same? location (:location @estado))
+        (.replaceState js/history nil "" href)
+        (.pushState js/history nil "" href))
+      (navigate! estado location))))
+
+(defn main [estado el]
+  (let [routes (enrutador/make-routes pages)]
+    (add-watch estado ::render (fn [_ _ _ _]
+                                 (let [f (get-render-f estado)]
+                                   (println {:render-fn (meta f)
+                                             :estado (:eavt (ds/db estado))})
+                                   (r/render el (f estado) {:alias-data {:routes routes}}))))
+    (r/set-dispatch!
+     (fn [event-data actions]
+       (let [dom-event (:replicant/dom-event event-data)]
+         (println {:level :info
+                   :evento dom-event})
+         (->> actions
+              (interpolate-actions dom-event)
+              (execute-actions estado)))))
+
+    (js/document.body.addEventListener
+     "click"
+     (fn [e]
+       (println "Evento click")
+       (route-click e estado routes)))
+
+    (js/window.addEventListener
+     "popstate"
+     (fn [_] 
+       (println "Evento popstate")
+       (navigate! estado (get-current-location routes))))
+
+    (db-store/persistir! estado [{:db/ident :system/app
+                                  :app/cargado-a-las (time/time)}
+                                 (get-current-location routes)])
+
+    (navigate! estado (get-current-location routes))))
+
+(defn init
+  []
+  (main (get-store) js/document.body))
+
+
+(comment
+  
+  (t/with-signal
+    (t/event! ::test {:a 1
+                      :b 2}))
+  
+  (def s (get-store))
+
+  (keys (ds/db dev/store))
+
+  (:eavt (ds/db dev/store))
+  (:aevt (ds/db dev/store))
+  (:avet (ds/db dev/store))
+
+  (main s js/document.body)
+
+  (let [mensaje "Bla bla bla"
+        app 2323
+        consulta [:internados]
+        estado store]
+    #_(receive-response app (time/now) consulta {:success? false
+                                                 :error mensaje})
+    (ds/transact! estado (receive-response app (time/now) consulta {:success? false
+                                                                    :error mensaje}))
+    (ds/transact! estado (receive-response app (time/now) consulta {:internados [:registros :registros :registros]}))
+    (ds/transact! estado [{:db/ident :ui/location
+                           :location :front-page}])
+    (ds/transact! estado [{:db/ident :system/app
+                           :app/cargado-a-las (time/time)}]))
+
+  (ds/q '[:find ?status
+          :in $ ?q
+          :where
+          [?e :query/query ?q]
+          [?e :query/status ?status]]
+        @store
+        [:internados])
+
+  (tap> @dev/store)
+
+  (ds/q '[:find ?a
+          :where
+          [?e :db/id 2323]
+          [?e :query/query [:internados]]
+          [?e :query/status ?a]]
+        @store)
+
+  (ds/pull @store [:query/status :query/query :query/user-time :query/result] 2323)
+
+  (ds/pull @store [:*] 2323)
+
+  (ds/pull @store [:location] :ui/location)
+
+  (ds/entity @store :system/app)
+
+  (ds/entity @store :ui/location)
+
+  (some->
+   (ds/q '[:find ?id
+           :in $ ?q
+           :where
+           [?e :db/id ?id]
+           [?e :query/query ?q]]
+         @store
+         [:internados])
+   first)
+
+   by-page-id
+  :rcf)

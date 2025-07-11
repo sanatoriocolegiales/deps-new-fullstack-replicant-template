@@ -1,0 +1,69 @@
+(ns {{top/ns}}.{{main/ns}}.back-end.middleware
+  (:require [ring.middleware.resource :refer [wrap-resource]]
+            [ring.middleware.content-type :refer [wrap-content-type]]
+            [ring.middleware.not-modified :refer [wrap-not-modified]]
+            [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.session :refer [wrap-session]] 
+            [ring.util.response :refer [status]]
+            [com.wsscode.pathom3.connect.operation.transit :as pcot]
+            [com.wsscode.transito :as transito]))
+
+(def exception-handlers 
+  {::eql-parse-exception (status 
+                          {:body (transito/write-str {:mensaje "Hubo un error al parsear la consulta EQL"} {:handlers pcot/write-handlers})
+                           :headers {"Content-Type" "application/transit+json"
+                                     "Accept" "application/transit+json"}}
+                          500)
+   ::error-en-resolver-obtener-internados (status
+                                           {:body (transito/write-str {:mensaje "Hubo un error al recuperar la lista de pacientes internados"} {:handlers pcot/write-handlers})
+                                            :headers {"Content-Type" "application/transit+json"
+                                                      "Accept" "application/transit+json"}}
+                                           500)})
+
+(defn dispatch-error-response
+  [exception]
+  (let [default-response (status
+                          {:body (transito/write-str {:mensaje "Hubo un error inesperado"} {:handlers pcot/write-handlers})
+                           :headers {"Content-Type" "application/transit+json"
+                                     "Accept" "application/transit+json"}}
+                          500)]
+    (get exception-handlers (:type (ex-data exception)) default-response)))
+
+(defn wrap-exception
+  [handler] 
+  (fn 
+    ([request]
+     (try
+       (handler request)
+       (catch Throwable e (dispatch-error-response e))))
+    ([request respond raise]
+     (try
+       (handler request respond raise)
+       (catch Throwable e (dispatch-error-response e))))))
+
+(defn add-middleware [handler]
+  (-> handler 
+      wrap-exception
+      wrap-session
+      wrap-params
+      (wrap-resource "public")
+      wrap-content-type
+      wrap-not-modified))
+
+
+(comment
+  
+  (try
+    (throw (ex-info "Error" {:type ::errocito}))
+    (catch Exception e (dispatch-error-response e)))
+  
+  (try
+    (throw (ex-info "Error" {:type ::eql-parse-exception}))
+    (catch Exception e (dispatch-error-response e)))
+
+(try
+  (throw (ex-info "Hubo un error al parsear el EQL" {:type :{{top/ns}}.{{main/ns}}.back-end.middleware/eql-parse-exception}))
+  (catch Exception e (dispatch-error-response e)))
+  
+
+  :rcf)

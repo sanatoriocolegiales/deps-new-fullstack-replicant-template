@@ -12,6 +12,12 @@
    :only]
   ["src" "src/{{top/file}}"
    {"core.tmpl" "{{main/file}}/back_end/core.clj"
-    "system.tmpl" "{{main/file}}/back_end/system.clj"}]
+    "system.tmpl" "{{main/file}}/back_end/system.clj"}
+    "middleware.tmpl" "{{main/file}}/back_end/middleware.clj"
+    "service.tmpl" "{{main/file}}/back_end/service.clj"
+    "pacientes.tmpl" "{{main/file}}/back_end/modelo/pacientes.clj"
+    "corecljs.tmpl" "{{main/file}}/front_end/core.cljs"
+    "enrutador.tmpl" "{{main/file}}/front_end/enrutador.cljc"
+    "frontpage.tmpl" "{{main/file}}/front_end/frontpage.cljc"}]
   ["test" "test/{{top/file}}"
    {"main_test.tmpl" "{{main/file}}_test.clj"}]]}

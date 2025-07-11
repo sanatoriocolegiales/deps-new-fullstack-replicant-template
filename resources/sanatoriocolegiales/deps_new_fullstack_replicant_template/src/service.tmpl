@@ -1,0 +1,82 @@
+(ns {{top/ns}}.{{main/ns}}.back-end.service
+  (:require [com.wsscode.transito :as transito]
+            [ring.util.response :as response]
+            [com.wsscode.pathom3.interface.eql :as p.eql]
+            [com.wsscode.pathom3.connect.indexes :as pci]
+            [com.wsscode.pathom3.connect.operation.transit :as pcot]
+            [com.wsscode.pathom3.connect.planner :as pcp]
+            [{{top/ns}}.{{main/ns}}.back-end.modelo.pacientes :as pacientes]
+            [{{top/ns}}.{{main/ns}}.back-end.middleware :refer [add-middleware]]
+            [taoensso.telemere :as t]))
+
+(def resolvers [pacientes/pacientes-resolvers])
+
+(defn get-env
+  [system-data]
+  (t/event! ::pathom-obtiene-configuracion-de-entorno {:level :info
+                                                       :data {:system system-data}})
+  (when (keys system-data)
+    (-> system-data
+        (pci/register resolvers)
+        (pcp/with-plan-cache (atom {})))))
+
+(defn eql-parser
+  [sys {:keys [body]}]
+  (t/event! ::recibe-body {:level :info
+                           :data {:cuerpo body}})
+  (try
+    (let [request-body (transito/read-str (slurp body) {:handlers pcot/read-handlers})
+          parser (p.eql/boundary-interface (get-env sys))]
+      (t/event! ::generando-respuesta {:level :info
+                                       :request request-body})
+      (-> (response/response
+           (transito/write-str (parser request-body) {:handlers pcot/write-handlers}))
+          (response/content-type "application/transit+json")
+          (response/header "Accept" "application/transit+json")))
+    (catch Exception e (do
+                         (t/event! ::excepcion-al-procesar-eql {:level :error
+                                                                :data {:data (ex-data e)
+                                                                       :message (ex-message e)
+                                                                       :cause (ex-cause e)}})
+                         (throw (ex-info "Hubo un error al parsear el EQL" {:type :{{top/ns}}.{{main/ns}}.back-end.middleware/eql-parse-exception
+                                                                            :data (ex-data e)
+                                                                            :message (ex-message e)
+                                                                            :cause (ex-cause e)}))))))
+
+(defn router
+  [system]
+  (fn handler-enrutador [{:keys [uri request-method] :as request}]
+    (t/event! ::despachando-a-ruta {:level :info
+                                    :data {:ruta-method [uri request-method] 
+                                           :request request
+                                           :sistema system}})
+    (condp = [uri request-method]
+      ["/" :get] (-> (response/resource-response "public/index.html")
+                     (response/content-type "text/html"))
+      ["/v1/api" :post] (eql-parser system request)
+      ["/v1/api" :get] (-> (response/response (transito/write-str {:mensaje "Metodo no permitido"})) 
+                           (response/status 405)
+                           (response/content-type "application/transit+json"))
+      ["/health" :get] (assoc (response/response "<h1>Status: Alive</h1>") :headers {"Content-Type" "text/html"})
+      (-> (response/not-found (transito/write-str {:mensaje "Recurso no encontrado. Revise la URL"}))
+          (response/content-type "application/transit+json")
+          (response/header "Accept" "application/transit+json")))))
+ 
+(defn app
+  [system] 
+  (add-middleware (router system)))
+
+
+(comment
+
+  (transito/read-str (slurp user/cuerpo) {:handlers (pcot/read-handlers)})
+  
+  (tap> (p.eql/process (get-env (-> user/running-system :env :db)) {} [:internados]))
+
+  (tap> (p.eql/process (get-env {:asistencial nil}) {} [:internados]))
+ 
+  (tap> (cliente-http/post-v1-api [:internados]))
+
+  (tap> (cliente-http/post-v1-api [:x]))
+
+  :rcf)

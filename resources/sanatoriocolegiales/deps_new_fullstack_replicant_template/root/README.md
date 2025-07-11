@@ -2,37 +2,52 @@
 
 {{description}}
 
-## Usage
+## Desarrollo
 
-FIXME: write usage documentation!
+Para iniciar tu entorno de desarrollo en el root del proyecto teclea:
 
-Invoke a library API function from the command-line:
+```bash
+bb dev
+```
+Esto instalará las dependencias de node, iniciará un proceso de vigilancia de tailwind y de shadow con los perfiles app-dev y portfolio. Adicionalmente se lanzará una ventana de [Portal](https://github.com/djblue/portal) que puedes configurar a voluntad en dev/user.clj 
 
-    $ clojure -X {{top/ns}}.{{main/ns}}/foo :a 1 :b '"two"'
-    {:a 1, :b "two"} "Hello, World!"
+En el archivo mise.toml se encuentran las dependencias necesarias para el entorno, por lo que es necesario tener (mise-en-place)[https://mise.jdx.dev/] instalado y activado. 
 
-Run the project's tests (they'll fail until you edit them):
+Una vez que el proceso indique que se han compilado los perfiles *app-dev* y *portfolio*, conectarse a VSCode eligiendo la opción "Connect to a running REPL in your project". Elegir el puerto 9500 y luego el perfil *app-dev*.
 
-    $ clojure -T:build test
+### Portfolio
 
-Run the project's CI pipeline and build a JAR (this will fail until you edit the tests to pass):
+Este proyecto cuenta con [Portfolio](https://github.com/cjohansen/portfolio?tab=readme-ov-file) para asistir en el desarrollo de la UI. Los archivos necesarios se levantan en un build aparte y se usa el http server de shadow-cljs. Revisar la documentación.
 
-    $ clojure -T:build ci
+## Tests
 
-This will produce an updated `pom.xml` file with synchronized dependencies inside the `META-INF`
-directory inside `target/classes` and the JAR in `target`. You can update the version (and SCM tag)
-information in generated `pom.xml` by updating `build.clj`.
+Para ejecutar los tests correr:
 
-Install it locally (requires the `ci` task be run first):
+```bash
+bb tests
+```
 
-    $ clojure -T:build install
+## Tests de aceptación
 
-Deploy it to Clojars -- needs `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` environment
-variables (requires the `ci` task be run first):
+Existe un directorio aparte configurado para ejecutar los tests de aceptación apuntado al puerto 4500 (donde se espera que la aplicación de producción se ejecute). Para correr los tests de aceptación:
 
-    $ clojure -T:build deploy
+```bash
+bb acc-tests
+```
 
-Your library will be deployed to {{group/id}}/{{artifact/id}} on clojars.org by default.
+## Crear Release Candidate
+
+Llegado el momento de desplegar ejecutar:
+
+```bash
+bb release
+```
+
+Este comando corre los tests unitarios, compila el jar, crea una imagen de Docker con el jar y corre el contenedor. Para realizar cualquier prueba estos comandos se pueden correr por separados. Ejecute lo siguiente para poder ver las opciones disponibles:
+
+```bash
+bb tasks
+```
 
 ## License
 
