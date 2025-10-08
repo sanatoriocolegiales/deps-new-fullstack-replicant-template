@@ -31,6 +31,13 @@ O en su defecto utilizar el último sha tomado de los commits:
 clojure -Sdeps '{:deps {io.github.sanatoriocolegiales/deps-new-fullstack-replicant-template {:git/sha "CODIGO-SHA"}}}' -Tnew create :template sanatoriocolegiales/deps-new-fullstack-replicant-template :name sanatoriocolegiales/<mi-proyecto>
 ```
 
+En Windows:
+
+```powershell
+clojure -Sdeps '{:deps {io.github.sanatoriocolegiales/deps-new-fullstack-replicant-template {:git/sha \"CODIGO-SHA\" :git/tag \"v0.0.1\"}}}' -Tnew create :template sanatoriocolegiales/deps-new-fullstack-replicant-template :name sanatoriocolegiales/<mi-proyecto>
+```
+
+
 ## Desarrollo
 
 Antes de iniciar revisa tu archivo config.edn y setea todo lo que sea necesario para que el backend arranque correctamente. En especial la variable de entorno CREDENTIALS tiene que apuntar a un archivo .edn con las llaves que se especifican más abajo. Igual todo se puede cambiar a conveniencia. También vas a necesitar el .jar de Relativity en la carpeta *resources* o puedes retirarlo del deps.edn si lo prefieres. 
