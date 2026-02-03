@@ -41,10 +41,6 @@
                       :task (do
                               (println "Deteniendo contenedor Docker...")
                               (shell "docker" "compose" "stop" "app"))}
-         acc-tests {:doc "Corre los tests de aceptación"
-                    :task (do
-                            (println "Corriendo tests de aceptación...")
-                            (clojure "-X:acceptance-tests"))}
          tests {:doc "Corre tests unitarios"
                 :task (do
                         (println "Corriendo tests unitarios...")
