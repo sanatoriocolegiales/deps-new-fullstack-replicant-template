@@ -12,10 +12,10 @@
   (t/event! ::cargando-configuracion {:level :info :data {:perfil perfil}})
   (read-config (io/resource "config.edn") (when perfil {:profile perfil})))
 
-(defmethod ds/named-system :prod
+(def base-system
   [_]
   {::ds/defs
-   {:env (obtener-configuracion :prod)
+   {:env {}
     :logs {:telemere #::ds{:start (fn iniciar-handler-log-prod [{{:keys [log-path]} ::ds/config}]
                                     (t/add-handler! :production-handler (t/handler:file {:path log-path
                                                                                          :output-fn (t/pr-signal-fn {:pr-fn :edn})})))
@@ -35,7 +35,42 @@
                                           (t/event! ::creando-handler-produccion {:level :info
                                                                                   :data {:conexiones conexiones}})
                                           (app conexiones))
-                                 :config {:conexiones (ds/ref [:env :db])}}}}})
+                                 :config {:conexiones (ds/ref [:env :db])}}}}}) 
+
+
+(defmethod ds/named-system :base
+  [_]
+  base-system)
+
+(defmethod ds/named-system :prod
+  [_]
+  (ds/system :base {[:env] (obtener-configuracion :prod)}))
+
+(defmethod ds/named-system :test
+ [_]
+ (ds/system :base {[:env] (obtener-configuracion :test)}))
+
+(defmethod ds/named-system :dev
+  [_]
+  (ds/system :prod {[:env] (system/obtener-configuracion :dev)
+                    [:log :telemere ::ds/start] (fn iniciar-handler-log-dev [_]
+                                                  (t/add-handler! :portal-handler
+                                                                  (fn
+                                                                    ([signal]
+                                                                     (tap>
+                                                                      (into {} (keep (fn [[k v]] (when v [k v])) signal))))
+                                                                    ([] nil))))
+                    [:http-server :server ::ds/config] {:handler (ds/ref [:http-server :handler])
+                                                        :opts {:port (ds/ref [:env :port])
+                                                               :join? false}}
+                    [:http-server :handler ::ds/start] (fn crear-handler-dev [{{:keys [conexiones]} ::ds/config}]
+                                                         (t/event! ::creando-handler-desarrollo {:level :info
+                                                                                                 :data {:conexiones conexiones}})
+                                                         (wrap-reload (#'app conexiones)))}))
+
+(defmethod ds/named-system :donut.system/repl
+  [_]
+  (ds/system :dev))                                                         
 
 
 
