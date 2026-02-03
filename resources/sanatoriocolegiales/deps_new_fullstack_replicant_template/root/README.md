@@ -4,7 +4,14 @@
 
 ## Desarrollo
 
-Para iniciar tu entorno de desarrollo en el root del proyecto teclea:
+La primera vez es recomendable correr antes que nada:
+
+```bash
+bb npm
+```
+Así garantizamos que shadow-cljs esté instalado antes de ejecutar los builds (de lo contrario podrías encontrar un error de permisos, lo cual despista un poco).
+
+De ahí en más, para iniciar tu entorno de desarrollo en el root del proyecto teclea:
 
 ```bash
 bb dev
