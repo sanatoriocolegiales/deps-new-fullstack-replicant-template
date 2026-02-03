@@ -1,7 +1,8 @@
 {:deps {:aliases [:dev :nrepl :fs-web-plugin]}
  :nrepl {:port 9500
          :middleware [cider.nrepl/cider-middleware shadow.cljs.devtools.server.nrepl/middleware]}
- :dev-http {8082 ["portfolio/public" "classpath:public" "resources"]}
+ :dev-http {8082 ["portfolio/public" "classpath:public" "resources"]
+            8083 "out/test"}
  :builds {:app {:target :browser
                 :modules {:main {:init-fn {{top/ns}}.{{main/ns}}.front-end.core/init}}
                 :output-dir "resources/public/js"
@@ -15,4 +16,7 @@
           :app-dev {:target :browser
                     :modules {:main {:init-fn dev/init}}
                     :output-dir "resources/public/js"
-                    :asset-path "/js"}}}
+                    :asset-path "/js"}
+          :test {:target :browser
+                 :test-dir "out/test"
+                 :ns-regexp \"{{top/ns}}.{{main/ns}}.front-end..+-test\"}}}
