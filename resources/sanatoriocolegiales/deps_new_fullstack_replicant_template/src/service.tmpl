@@ -71,12 +71,11 @@
 
   (transito/read-str (slurp user/cuerpo) {:handlers (pcot/read-handlers)})
   
-  (tap> (p.eql/process (get-env (-> user/running-system :env :db)) {} [:internados]))
-
-  (tap> (p.eql/process (get-env {:asistencial nil}) {} [:internados]))
+   (def c (p.eql/boundary-interface (-> {}
+                                       (pci/register resolvers)
+                                       (pcp/with-plan-cache (atom {})))))
+  
+  (c {:pathom/eql [:pacientes]})
  
-  (tap> (cliente-http/post-v1-api [:internados]))
-
-  (tap> (cliente-http/post-v1-api [:x]))
 
   :rcf)

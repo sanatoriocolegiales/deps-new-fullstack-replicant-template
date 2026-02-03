@@ -1,11 +1,16 @@
 (ns dev
   (:require [{{top/ns}}.{{main/ns}}.front-end.core :refer [main]]
             [{{top/ns}}.{{main/ns}}.front-end.db.store :refer [get-store]]
-            [taoensso.telemere :as t]))
+            [taoensso.telemere :as t]
+            [dataspex.core :as dataspex]
+            [nexus.action-log :as action-log]))
 
 (def store (get-store))
 
+(dataspex/inspect "Estado de la aplicación" store)
+
 (defn init []
+  (action-log/inspect)
   (main store js/document.body)
   (t/event! ::aplicacion-cargada-desarrollo {:level :info}))
 

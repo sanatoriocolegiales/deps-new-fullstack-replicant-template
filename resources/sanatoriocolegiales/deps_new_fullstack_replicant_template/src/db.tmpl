@@ -8,21 +8,17 @@
 
 (defn get-query-ident
   [state query]
-  (println {:consulta query
-            :estado (:eavt (ds/db state))})
-  (let [res (ds/entid @state [:query/query query])]
+  (let [res (ds/entid state [:query/query query])]
     (println (str "IDENT: " res))
     res))
 
 (defn pull-query
   [state ident]
-  (ds/pull @state [:*] ident))
+  (ds/pull state [:*] ident))
 
 (defn query-status->action
   [state ident {:keys [on-error-action on-load-action on-availability-action else-action] :or {else-action [:p "No hay nada que mostrar"]}}]
   (t/event! ::query-status-a-accion {:level :info})
-  (println {:estado (:eavt (ds/db state))
-            :ident ident})
   (if ident 
     (let [q (pull-query state ident)]
       (println {:resultado-pull-query q})
@@ -57,13 +53,13 @@
            :where
            [?e :query/query ?q]
            [?e :query/result ?result]]
-         @state
+         state
          query)
    ffirst))
 
 (defn get-location
   [estado]
-  (ds/pull @estado [:location] :ui/location))
+  (ds/pull @estado [:*] :ui/location))
 
 (comment 
   (receive-response 121 "2025-01-04T12:23:23" [:internados] {:internados [:registro]})

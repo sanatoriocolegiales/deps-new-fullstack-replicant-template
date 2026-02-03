@@ -1,9 +1,10 @@
 (ns {{top/ns}}.{{main/ns}}.front-end.core
   (:require [replicant.dom :as r]
+            [nexus.registry :as nxr]
+            [nexus.strategies :as strategies]
             [tick.core :as time]
             [datascript.core :as ds]
             [taoensso.telemere :as t]
-            [clojure.walk :as walk]
             [replicant.alias :as alias]
             [com.wsscode.transito :as transito]
             [com.wsscode.pathom3.connect.operation.transit :as pcot] 
@@ -12,28 +13,37 @@
             [{{top/ns}}.{{main/ns}}.front-end.db.store :as db-store :refer [get-store]]))
 
 (defn realizar-consulta
-  [estado consulta]
-  (t/event! ::busca-pacientes-internados {:level :info})
-  (let [app (db-store/get-app-id estado)]
-    (db-store/persistir! estado (db-store/send-request app (time/now) consulta))
-    (-> (js/fetch (str js/location.origin "/v1/api") (clj->js {:method "POST"
-                                                               :headers {"Content-Type" "application/transit+json"
-                                                                         "Accept" "application/transit+json"}
-                                                               :body (transito/write-str consulta {:handlers pcot/write-handlers})}))
-        (.then #(.text %))
-        (.then #(transito/read-str % {:handlers (assoc pcot/read-handlers "f" (fn [t]
-                                                                                (let [v (js/Object.values t)]
-                                                                                  (->> v
-                                                                                       js->clj
-                                                                                       (apply str)
-                                                                                       js/Number.parseInt))))}))
-        (.then #(db-store/persistir! estado (db-store/receive-response app (time/now) consulta %)))
-        (.catch #(let [mensaje (.-message %)]
-                   (js/console.error mensaje)
-                   (t/event! ::error-al-obtener-pacientes-internados {:level :error
-                                                                      :excepcion mensaje})
-                   (db-store/persistir! estado (db-store/receive-response app (time/now) consulta {:success? false
-                                                                                                   :error mensaje})))))))
+  ([estado consulta]
+   (realizar-consulta estado consulta nil))
+  ([estado consulta atributo]
+   (t/event! ::realiza-consulta {:level :info
+                                 :data {:estado estado
+                                        :atributo atributo
+                                        :consulta consulta}}) 
+   (db-store/persistir! estado (db-store/send-request -1 (time/now) consulta))
+   (let [ident (db-store/get-query-id @estado consulta)
+         pathom-query (cond-> {:pathom/eql consulta}
+                        atributo (assoc :pathom/entity atributo))] 
+     (-> (js/fetch (str js/location.origin "/v1/api") (clj->js {:method "POST"
+                                                                :headers {"Content-Type" "application/transit+json"
+                                                                          "Accept" "application/transit+json"}
+                                                                :body (transito/write-str pathom-query {:handlers pcot/write-handlers})}))
+         (.then #(.text %))
+         (.then #(transito/read-str % {:handlers (assoc pcot/read-handlers "f" (fn [t]
+                                                                                 (let [v (js/Object.values t)]
+                                                                                   (->> v
+                                                                                        js->clj
+                                                                                        (apply str)
+                                                                                        js/Number.parseInt))))}))
+         (.then #(db-store/persistir! estado (db-store/receive-response ident (time/now) consulta %)))
+         (.catch #(let [mensaje (.-message %)] 
+                    (t/event! ::error-al-realizar-consulta {:level :error
+                                                            :data {:excepcion mensaje
+                                                                   :consulta consulta
+                                                                   :atributo atributo}})
+                    (db-store/persistir! estado (db-store/receive-response ident (time/now) consulta {:success? false
+                                                                                                   :error mensaje}))
+                    (throw %)))))))
 
 (defn routing-anchor [attrs children]
   (let [routes (-> attrs :replicant/alias-data :routes)]
@@ -49,14 +59,28 @@
           (.closest "a")
           (.getAttribute "href")))
 
-(defn interpolate-actions [event actions]
-  (walk/postwalk
-   (fn [x]
-     (case x
-       :event/target.value (.. event -target -value)
-       ;; Agregar nuevos eventos acá
-       x))
-   actions))
+(defn get-input-value [^js element]
+  (cond
+    (= "number" (.-type element)) (when (not-empty (.-value element))
+                                    (.-valueAsNumber element))
+    :else (.-value element)))
+
+(defn get-input-key [^js element]
+  (when-let [k (some-> element .-name not-empty keyword)]
+    (when (or (not= "checkbox" (.-type element))     
+              (.-checked element)                    
+              (not (.hasAttribute element "value"))) 
+      k)))
+
+(defn gather-form-data [^js form-el]
+  (some-> (.-elements form-el)
+          into-array
+          (.reduce
+           (fn [res ^js el]
+             (let [k (get-input-key el)]
+               (cond-> res
+                 k (assoc k (get-input-value el)))))
+           {})))          
 
 (def pages
   [frontpage/page])
@@ -67,7 +91,7 @@
        (into {})))
 
 (defn get-render-f [state] 
-  (or (get-in by-page-id [(-> (db-store/get-current-location state) :location :location/page-id) :render])
+  (or (get-in by-page-id [(-> (db-store/get-current-location state) :ui/location :location/page-id) :render])
       (fn [_] 
         [:h1 "No se encontró la ruta especificada"]))) 
  
@@ -75,52 +99,85 @@
   (->> js/location.pathname
        (enrutador/url->location routes)))
 
-(defn execute-actions [estado actions]
-  (t/event! ::ejecuta-acciones {:level :info})
-  (doseq [[action & args] actions]
-    (case action
-      :db/transact (apply db-store/persistir! estado args)
-      :data/query (apply realizar-consulta estado args)
-      (t/event! ::accion-desconocida {:level :error
-                                      :fecha (time/now)
-                                      :data args}))))
-
-(defn get-location-load-actions [location]
-  (case (:location/page-id location)
-    :pages/frontpage [[:data/query [:internados]]]))
-
-(defn navigate! [estado location]
-  (t/event! ::navega-a-ubicacion {:level :info})
-  (let [current-location (:location (db-store/get-current-location estado))]
+(defn navigate! [estado new-location]
+  (when new-location
     (db-store/persistir! estado [{:db/ident :ui/location
-                                  :location location}])
-    (when (not= current-location location)
-      (execute-actions estado (get-location-load-actions location)))))
+                                  :ui/location new-location}])))
 
 (defn route-click [e estado routes]
   (let [href (find-target-href e)]
+    (println "href: " href)
     (when-let [location (enrutador/url->location routes href)]
+      (println "location: " location)
       (.preventDefault e)
-      (if (enrutador/essentially-same? location (:location @estado))
+      (if (enrutador/essentially-same? location (:ui/location (db-store/get-current-location estado)))
         (.replaceState js/history nil "" href)
         (.pushState js/history nil "" href))
       (navigate! estado location))))
 
+(nxr/register-system->state! ds/db)
+
+(nxr/register-interceptor! strategies/fail-fast) 
+
+(nxr/register-effect! 
+ :db/transact
+ ^:nexus/batch
+ (fn [_ db data]
+   (when db
+     (try
+       (db-store/persistir! db (apply concat (map first data)))
+       (catch :default e (t/event! ::error-al-realizar-consulta {:level :error
+                                                                 :data {:excepcion (.-message e)
+                                                                        :args data}}))))))
+
+(nxr/register-effect!
+ :data/query
+ (fn [_ estado consulta atributo]
+   (try 
+     (if atributo
+       (realizar-consulta estado consulta atributo)
+       (realizar-consulta estado consulta))
+     (catch :default e (t/event! ::error-al-ejecutar-consulta-al-backend {:level :error
+                                                                          :data (.-message e)})))))
+
+(nxr/register-action!
+ :db/load
+ (fn [_ consulta atributo]
+   (if atributo 
+     [[:data/query consulta atributo]]
+     [[:data/query consulta]])))
+
+(nxr/register-placeholder!
+ :event.target/value
+ (fn [{:replicant/keys [dom-event]}]
+   (some-> dom-event .-target .-value)))
+
+(nxr/register-placeholder!
+ :event/prevent-default
+ (fn [{:replicant/keys [dom-event]}]
+   (some-> dom-event .preventDefault)))
+
+(nxr/register-placeholder!
+ :parse/number
+ (fn [_ val]
+   (or (some-> val parse-long) 0)))
+
+(nxr/register-placeholder!
+ :event/form-data
+ (fn [{:replicant/keys [dom-event]}] 
+   (some-> dom-event .-target gather-form-data)))   
+
 (defn main [estado el]
   (let [routes (enrutador/make-routes pages)]
     (add-watch estado ::render (fn [_ _ _ _]
-                                 (let [f (get-render-f estado)]
+                                 (let [state (ds/db estado)
+                                       f (get-render-f estado)]
                                    (println {:render-fn (meta f)
-                                             :estado (:eavt (ds/db estado))})
-                                   (r/render el (f estado) {:alias-data {:routes routes}}))))
-    (r/set-dispatch!
-     (fn [event-data actions]
-       (let [dom-event (:replicant/dom-event event-data)]
-         (println {:level :info
-                   :evento dom-event})
-         (->> actions
-              (interpolate-actions dom-event)
-              (execute-actions estado)))))
+                                             :estado state})
+                                   (r/render el (f state) {:alias-data {:routes routes}}))))
+    
+    (r/set-dispatch! (fn [data actions] 
+                       (nxr/dispatch estado data actions)))
 
     (js/document.body.addEventListener
      "click"

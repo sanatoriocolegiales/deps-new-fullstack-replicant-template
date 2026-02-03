@@ -7,34 +7,35 @@
 (defn render-ui
   [estado]
   (t/event! ::renderiza-frontpage {:level :info})
-  (let [consulta [:internados]
-        ident (get-query-id estado consulta)] 
+  (let [consulta [:pacientes]] 
     [:div
+     [:button.btn.btn-xs
+      {:on {:click [[:db/load consulta]]}}
+      "Cargar lista"]
      [:h1.text-2xl.text-center.p-2 "Lista de pacientes"]
-     (query-status->action
-      estado
-      ident
-      {:on-availability-action (let [resultado (-> (get-result estado consulta) :internados)
-                                     pacientes (when (vector? resultado) resultado)
-                                     error-db (when (map? resultado) true)]
-                                 (println {:resultado resultado})
-                                 (if error-db
-                                   [:p "Hubo un problema al recuperar la lista de pacientes"]
-                                   [:div.overflow-x-auto.justify-self-center.m-10.p-5
-                                    [:table.table.table-zebra
-                                     [:tr [:th "Historia Clínica"] [:th "Nombre"] [:th "Habitación"]]
-                                     (map (fn [{:tbc_admision_scroll/keys [adm_histclin adm_apelnom adm_habita]}]
-                                            [:tr {:class ["hover:bg-base-300"]} [:td adm_histclin] [:td adm_apelnom] [:td adm_habita]])
-                                          pacientes)]]))
-       :on-error-action [:p "Ocurrió un problema al cargar lista de pacientes"]
-       :on-load-action [:span.loading.loading-spinner "Cargando"]
-       :else-action [:p.text-xl "No hay pacientes que mostrar"]})]))
+     (let [ident (get-query-id estado consulta)]
+       (query-status->action
+        estado
+        ident
+        {:on-availability-action (let [resultado (-> (get-result estado consulta) :pacientes)
+                                       pacientes (when (vector? resultado) resultado)
+                                       error-db (when (map? resultado) true)]
+                                   (println {:resultado resultado})
+                                   (if error-db
+                                     [:p "Hubo un problema al recuperar la lista de pacientes"]
+                                     [:div.overflow-x-auto.justify-self-center.m-10.p-5
+                                      [:table.table.table-zebra
+                                       [:tr [:th "Historia Clínica"] [:th "Nombre"] [:th "Apellido"]]
+                                       (map (fn [{:paciente/keys [historia-clinica nombre apellido]}]
+                                              [:tr {:class ["hover:bg-base-300"]} [:td historia-clinica] [:td nombre] [:td apellido]])
+                                            pacientes)]]))
+         :on-error-action [:p "Ocurrió un problema al cargar lista de pacientes"]
+         :on-load-action [:span.loading.loading-spinner "Cargando"]
+         :else-action [:p.text-xl "No hay pacientes que mostrar"]}))]))
 
 (def page
   {:page-id :pages/frontpage
    :route []
-   :on-load (fn [location]
-              [[:data/query [:internados]]])
    :render #'render-ui})
 
 (comment
