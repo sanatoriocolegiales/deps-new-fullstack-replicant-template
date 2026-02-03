@@ -22,7 +22,7 @@
            :dev {:classpath-overrides {#_#_org.clojure/clojurescript nil
                                        org.clojure/clojure nil}
                  :extra-paths ["dev" "test" "portfolio/src" "test_aceptacion"]
-                 :extra-deps {thheller/shadow-cljs {:mvn/version "3.0.5"}
+                 :extra-deps {thheller/shadow-cljs {:mvn/version "3.3.5"}
                               binaryage/devtools {:mvn/version "1.0.7"}
                               djblue/portal {:mvn/version "0.59.1"}
                               ring/ring-devel {:mvn/version "1.14.1"}
@@ -47,7 +47,7 @@
                                 cider/cider-nrepl {:mvn/version "0.55.4"}}}
            :shadow-prod {:extra-deps {thheller/shadow-cljs {:mvn/version "3.3.5"}}
                          :main-opts ["-m" "shadow.cljs.devtools.cli" "release" "app"]}
-           :shadow-build-report {:extra-deps {thheller/shadow-cljs {:mvn/version "3.0.5"}}
+           :shadow-build-report {:extra-deps {thheller/shadow-cljs {:mvn/version "3.3.5"}}
                                  :main-opts ["-m" "shadow.cljs.devtools.cli" "run" "shadow.cljs.build-report" "app" "reporte.html"]}
            :build {:extra-paths ["resources"]
                    :extra-deps {io.github.clojure/tools.build {:mvn/version "0.10.9"}
