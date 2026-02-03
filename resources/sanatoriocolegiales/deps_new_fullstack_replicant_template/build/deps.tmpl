@@ -58,14 +58,5 @@
                                 io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                                 ring/ring-mock {:mvn/version "0.6.1"}}
                    :main-opts ["-m" "cognitect.test-runner"]
-                   :exec-fn cognitect.test-runner.api/test}
-           :acceptance-tests {:extra-paths ["test_aceptacion"]
-                              :extra-deps {clj-test-containers/clj-test-containers {:mvn/version "0.7.4"}
-                                           etaoin/etaoin {:mvn/version "1.1.43"}
-                                           io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-                                           org.testcontainers/testcontainers {:mvn/version "1.21.3"}}
-                              :main-opts ["-m" "cognitect.test-runner"]
-                              :exec-fn cognitect.test-runner.api/test
-                              :exec-args {:dirs ["test_aceptacion"]
-                                          :nses [test-aceptacion-firefox test-aceptacion-chrome]}}}}
+                   :exec-fn cognitect.test-runner.api/test}}}
 
