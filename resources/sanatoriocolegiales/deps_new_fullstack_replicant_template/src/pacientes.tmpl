@@ -8,41 +8,35 @@
 
 (def timeout (ft/init {::ft/timeout-ms 3000}))
  
-(pco/defresolver pacientes-internados [env {}]
-  {::pco/output [{:internados [:tbc_admision_scroll/adm_histclin
-                               :tbc_admision_scroll/adm_apelnom
-                               :tbc_admision_scroll/adm_obrsoc
-                               :tbc_admision_scroll/adm_fecing
-                               :tbc_admision_scroll/adm_horing 
-                               :tbc_admision_scroll/adm_fecnac
-                               :tbc_admision_scroll/adm_sexo 
-                               :tbc_admision_scroll/adm_intervencion 
-                               :tbc_admision_scroll/adm_habita
-                               :tbc_admision_scroll/adm_cama 
-                               :tbc_admision_scroll/adm_planobr 
-                               :tbc_admision_scroll/adm_utiliza
-                               :tbc_admision_scroll/adm_tipoing
-                               :tbc_admision_scroll/adm_histclinuni]}]}
-  {:internados
+(pco/defresolver pacientes [_ _]
+  {::pco/output [{:pacientes [:paciente/historia-clinica
+                              :paciente/nombre
+                              :paciente/apellido
+                              :paciente/dni]}]}
+  {:pacientes
    (try
-     (ft/with-timeout timeout 
-       (with-open [c (jdbc/get-connection (-> env :asistencial))]
-         (jdbc/execute! c ["SELECT adm_histclin, adm_apelnom, adm_obrsoc, adm_fecing, adm_horing, adm_fecnac, adm_sexo, 
-                                   adm_intervencion, adm_habita, adm_cama, adm_planobr, adm_utiliza, 
-                                   adm_tipoing, adm_histclinuni
-                            FROM tbc_admision_scroll
-                            WHERE adm_fecaltaefec = 0"]
-                        {:builder-fn rs/as-lower-maps}))) 
-     (catch Exception e (do (t/event! ::error-resolver-obtener-pacientes-internados {:level :error
-                                                                                     :data {:datos (ex-data e)
-                                                                                            :message (ex-message e)
-                                                                                            :cause (ex-cause e)}})
+     (ft/with-timeout timeout
+       [{:paciente/historia-clinica 3112132
+         :paciente/nombre "Julian"
+         :paciente/apellido "Marcano"
+         :paciente/dni 231213}
+        {:paciente/historia-clinica 31231
+         :paciente/nombre "Maria"
+         :paciente/apellido "Cantaleta"
+         :paciente/dni 64654}
+        {:paciente/historia-clinica 1123423
+         :paciente/nombre "Jim"
+         :paciente/apellido "Morrison"
+         :paciente/dni 23123}])
+     (catch Exception e (do (t/event! ::error-resolver-obtener-pacientes {:level :error
+                                                                          :data {:datos (ex-data e)
+                                                                                 :message (ex-message e)
+                                                                                 :cause (ex-cause e)}})
                             {:success? false
                              :datos (ex-data e)
                              :message (ex-message e)
                              :cause (ex-cause e)
                              :fecha (tick/instant)})))})
-
 
 (def pacientes-resolvers [pacientes-internados])
 
