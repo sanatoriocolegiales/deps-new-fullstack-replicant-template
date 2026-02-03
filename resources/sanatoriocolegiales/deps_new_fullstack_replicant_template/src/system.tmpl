@@ -5,7 +5,8 @@
    [aero.core :refer [read-config]]
    [ring.adapter.jetty :refer [run-jetty]] 
    [clojure.java.io :as io]
-   [taoensso.telemere :as t]))
+   [taoensso.telemere :as t]
+   [ring.middleware.reload :refer [wrap-reload]]))
 
 (defn obtener-configuracion
   [& [perfil]]
