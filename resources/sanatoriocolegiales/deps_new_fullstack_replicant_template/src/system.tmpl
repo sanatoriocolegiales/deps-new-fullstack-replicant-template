@@ -13,7 +13,6 @@
   (read-config (io/resource "config.edn") (when perfil {:profile perfil})))
 
 (def base-system
-  [_]
   {::ds/defs
    {:env {}
     :logs {:telemere #::ds{:start (fn iniciar-handler-log-prod [{{:keys [log-path]} ::ds/config}]
