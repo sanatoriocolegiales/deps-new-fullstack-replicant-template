@@ -14,7 +14,7 @@
          nrepl {:doc "Inicia NREPL compatible con VSCODE"
                 :task (do
                         (println "Compilando cljs...")
-                        (shell "npx shadow-cljs watch app-dev portfolio"))}
+                        (shell "npx shadow-cljs watch app-dev portfolio test"))}
          shadow {:doc "Compila js con shadow para producción"
                  :task (do
                          (println "Compilando cljs para produccion...")
