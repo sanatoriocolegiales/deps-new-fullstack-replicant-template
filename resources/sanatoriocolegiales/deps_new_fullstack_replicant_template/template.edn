@@ -28,7 +28,7 @@
     "store.tmpl" "{{main/file}}/front_end/db/store.cljc"}]
   ["test" "test/{{top/file}}"
    {"service_test.tmpl" "{{main/file}}/back_end/service_test.clj"
-    "db_test.tmpl" "{{main/file}}/front_end/db_test.cljc"}] 
+    "dsl.tmpl" "{{main/file}}/front_end/dsl.cljc"}] 
   ["portfolio" "portfolio/src"
    {"scenes.tmpl" "scenes.cljc"}]
   ["dev" "dev"

@@ -1,0 +1,19 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.dsl
+  (:require 
+    [{{top/ns}}.{{main/ns}}.front-end.db.store :as store]
+    [tick.core :as tick]))
+
+;; Manipula la DB para simular un estado con el que testear tus funciones de renderizado
+
+(defn estado-inicial
+  [store]
+  (store/persistir! store [{:db/ident :system/app
+                            :app/cargado-a-las (tick/time)}
+                           {:db/ident :ui/location
+                            :ui/location {:location/page-id :pages/frontpage
+                                          :location/params {}}}]))
+
+  
+(comment
+  
+  :rcf)
