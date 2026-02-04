@@ -1,0 +1,14 @@
+(ns {{top/ns}}.{{main/ns}}.front-end.frontpage_test
+ (:require  #?(:clj [clojure.test :refer [deftest is testing run-test use-fixtures]]
+               :cljs [cljs.test :refer [deftest is testing run-test]])
+            [lookup.core :as lookup]
+            [{{top/ns}}.{{main/ns}}.front-end.db.store :as store]
+            [{{top/ns}}.{{main/ns}}.front-end.frontpage :refer [render-ui]]
+            [{{top/ns}}.{{main/ns}}.front-end.dsl :as dsl]))
+
+
+(deftest fix-me 
+  (let [estado (store/get-store)]
+  (dsl/estado-inicial estado)
+  (testing "I fail"
+    (is (= "Soy un test que falla" (lookup/text (lookup/select-one "p" (render-ui @estado))))))))
